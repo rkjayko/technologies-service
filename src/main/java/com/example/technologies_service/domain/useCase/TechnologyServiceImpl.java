@@ -54,7 +54,7 @@ public class TechnologyServiceImpl implements ITechnologyService {
     public Mono<TechnologyDTO> getTechnologyById(Long id) {
         return repository.findById(id)
                 .map(this::mapToDTO)
-                .switchIfEmpty(Mono.error(new RuntimeException("Technology not found with id: " + id)));
+                .switchIfEmpty(Mono.error(new CustomException.TechnologyNotFoundException(id)));
     }
 
     @Override

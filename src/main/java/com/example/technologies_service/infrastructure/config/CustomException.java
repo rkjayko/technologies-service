@@ -2,7 +2,7 @@ package com.example.technologies_service.infrastructure.config;
 
 public class CustomException {
 
-    public class TechnologyNotFoundException extends RuntimeException {
+    public static class TechnologyNotFoundException extends RuntimeException {
         public TechnologyNotFoundException(Long id) {
             super("Technology not found with id: " + id);
         }
