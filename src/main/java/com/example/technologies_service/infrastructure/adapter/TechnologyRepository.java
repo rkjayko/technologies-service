@@ -1,6 +1,6 @@
-package com.example.technologies_service.repository;
+package com.example.technologies_service.infrastructure.adapter;
 
-import com.example.technologies_service.entity.Technology;
+import com.example.technologies_service.domain.entity.Technology;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;

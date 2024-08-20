@@ -1,9 +1,11 @@
 package com.example.technologies_service;
 
-import com.example.technologies_service.dto.TechnologyDTO;
-import com.example.technologies_service.entity.Technology;
-import com.example.technologies_service.repository.TechnologyRepository;
-import com.example.technologies_service.service.TechnologyService;
+import com.example.technologies_service.domain.dto.TechnologyDTO;
+import com.example.technologies_service.domain.entity.CapabilityTechnology;
+import com.example.technologies_service.domain.entity.Technology;
+import com.example.technologies_service.infrastructure.adapter.CapabilityTechnologyRepository;
+import com.example.technologies_service.infrastructure.adapter.TechnologyRepository;
+import com.example.technologies_service.domain.useCase.TechnologyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,8 +15,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
 @SpringJUnitConfig
 public class TechnologyServiceTest {
@@ -25,14 +32,21 @@ public class TechnologyServiceTest {
 
     private static final Long TECHNOLOGY_ID = 1L;
 
+    private static final String TECHNOLOGY_NAME_1 = "Java";
+
+    private static final String TECHNOLOGY_NAME_2 = "AWS";
+
     @MockBean
     private TechnologyRepository repository;
 
-    private TechnologyService service;
+    @MockBean
+    private CapabilityTechnologyRepository capabilityTechnologyRepository;
+
+    private TechnologyServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new TechnologyService(repository);
+        service = new TechnologyServiceImpl(repository, capabilityTechnologyRepository);
     }
 
     @Test
@@ -62,14 +76,14 @@ public class TechnologyServiceTest {
 
         StepVerifier.create(service.createTechnology(technologyDTO))
                 .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
-                        throwable.getMessage().equals("El nombre de la tecnología ya existe"))
+                        throwable.getMessage().equals("El nombre de la tecnología ya existe: " + TECHNOLOGY_NAME))
                 .verify();
     }
 
     @Test
     void testGetAllTechnologiesAscending() {
-        Technology tech1 = new Technology(TECHNOLOGY_ID, "Java", TECHNOLOGY_DESCRIPTION);
-        Technology tech2 = new Technology(2L, "Python", TECHNOLOGY_DESCRIPTION);
+        Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
 
         when(repository.findAllBy(any(PageRequest.class)))
                 .thenReturn(Flux.just(tech1, tech2));
@@ -77,15 +91,15 @@ public class TechnologyServiceTest {
         Flux<TechnologyDTO> result = service.getAllTechnologies("asc", 0, 2);
 
         StepVerifier.create(result)
-                .expectNextMatches(dto -> dto.getName().equals("Java"))
-                .expectNextMatches(dto -> dto.getName().equals("Python"))
+                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_1))
+                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_2))
                 .verifyComplete();
     }
 
     @Test
     void testGetAllTechnologiesDescending() {
-        Technology tech1 = new Technology(TECHNOLOGY_ID, "Python", TECHNOLOGY_DESCRIPTION);
-        Technology tech2 = new Technology(2L, "Java", TECHNOLOGY_DESCRIPTION);
+        Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
 
         when(repository.findAllBy(any(PageRequest.class)))
                 .thenReturn(Flux.just(tech1, tech2));
@@ -93,8 +107,70 @@ public class TechnologyServiceTest {
         Flux<TechnologyDTO> result = service.getAllTechnologies("desc", 0, 2);
 
         StepVerifier.create(result)
-                .expectNextMatches(dto -> dto.getName().equals("Python"))
-                .expectNextMatches(dto -> dto.getName().equals("Java"))
+                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_1))
+                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_2))
+                .verifyComplete();
+    }
+
+    @Test
+    public void testGetTechnologyByIdSuccess() {
+        Technology technology = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO expectedDTO = new TechnologyDTO(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+
+        when(repository.findById(TECHNOLOGY_ID)).thenReturn(Mono.just(technology));
+
+        Mono<TechnologyDTO> technologyMono = service.getTechnologyById(TECHNOLOGY_ID);
+
+        technologyMono
+                .subscribe(actualDTO -> {
+                    assertNotNull(actualDTO);
+                    assertEquals(expectedDTO, actualDTO);
+                });
+    }
+
+    @Test
+    void getTechnologyByIdNotFound() {
+        when(repository.findById(TECHNOLOGY_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.getTechnologyById(TECHNOLOGY_ID))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof RuntimeException &&
+                                throwable.getMessage().equals("Technology not found with id: 1")
+                )
+                .verify();
+    }
+
+    @Test
+    void saveCapabilityTechnologies() {
+        Long capabilityId = 1L;
+        List<Long> technologyIds = Arrays.asList(TECHNOLOGY_ID, 2L, 3L);
+
+        when(capabilityTechnologyRepository.saveAll(anyList())).thenReturn(Flux.empty());
+
+        StepVerifier.create(service.saveCapabilityTechnologies(capabilityId, technologyIds))
+                .verifyComplete();
+
+        verify(capabilityTechnologyRepository, times(1)).saveAll(anyList());
+    }
+
+    @Test
+    void getTechnologiesByCapabilityId() {
+        Long capabilityId = 1L;
+        CapabilityTechnology ct1 = new CapabilityTechnology();
+        ct1.setTechnologyId(TECHNOLOGY_ID);
+        CapabilityTechnology ct2 = new CapabilityTechnology();
+        ct2.setTechnologyId(2L);
+
+        Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+
+        when(capabilityTechnologyRepository.findByCapabilityId(capabilityId)).thenReturn(Flux.just(ct1, ct2));
+        when(repository.findById(1L)).thenReturn(Mono.just(tech1));
+        when(repository.findById(2L)).thenReturn(Mono.just(tech2));
+
+        StepVerifier.create(service.getTechnologiesByCapabilityId(capabilityId))
+                .expectNextMatches(dto -> dto.getId().equals(1L) && dto.getName().equals(TECHNOLOGY_NAME_1) && dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
+                .expectNextMatches(dto -> dto.getId().equals(2L) && dto.getName().equals(TECHNOLOGY_NAME_2) && dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
                 .verifyComplete();
     }
 }
