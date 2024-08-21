@@ -1,6 +1,6 @@
-package com.example.technologies_service.domain.useCase;
+package com.example.technologies_service.application.useCase;
 
-import com.example.technologies_service.domain.dto.TechnologyDTO;
+import com.example.technologies_service.infrastructure.adapter.in.TechnologyDTO;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

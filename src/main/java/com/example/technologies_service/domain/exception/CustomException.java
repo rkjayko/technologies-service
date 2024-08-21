@@ -1,4 +1,4 @@
-package com.example.technologies_service.infrastructure.config;
+package com.example.technologies_service.domain.exception;
 
 public class CustomException {
 
