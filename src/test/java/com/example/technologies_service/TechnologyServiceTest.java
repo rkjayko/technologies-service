@@ -1,13 +1,15 @@
 package com.example.technologies_service;
 
-import com.example.technologies_service.domain.dto.TechnologyDTO;
+import com.example.technologies_service.application.mapper.TechnologyMapper;
+import com.example.technologies_service.infrastructure.adapter.in.TechnologyDTO;
 import com.example.technologies_service.domain.entity.CapabilityTechnology;
 import com.example.technologies_service.domain.entity.Technology;
-import com.example.technologies_service.infrastructure.adapter.CapabilityTechnologyRepository;
-import com.example.technologies_service.infrastructure.adapter.TechnologyRepository;
-import com.example.technologies_service.domain.useCase.TechnologyServiceImpl;
+import com.example.technologies_service.domain.repository.CapabilityTechnologyRepository;
+import com.example.technologies_service.domain.repository.TechnologyRepository;
+import com.example.technologies_service.application.useCase.TechnologyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -20,7 +22,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @SpringJUnitConfig
@@ -42,23 +43,29 @@ public class TechnologyServiceTest {
     @MockBean
     private CapabilityTechnologyRepository capabilityTechnologyRepository;
 
+    @Mock
+    private TechnologyMapper technologyMapper;
+
     private TechnologyServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new TechnologyServiceImpl(repository, capabilityTechnologyRepository);
+        service = new TechnologyServiceImpl(repository, capabilityTechnologyRepository, technologyMapper);
     }
 
     @Test
     void testCreateTechnologySuccess() {
         Technology savedTechnology = new Technology(1L, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO technologyDTO = new TechnologyDTO(null, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO savedTechnologyDTO = new TechnologyDTO(1L, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
 
         when(repository.findByName(TECHNOLOGY_NAME)).thenReturn(Mono.empty());
         when(repository.save(any(Technology.class))).thenReturn(Mono.just(savedTechnology));
+        when(technologyMapper.mapToDTO(savedTechnology)).thenReturn(savedTechnologyDTO);
 
-        TechnologyDTO technologyDTO = new TechnologyDTO(null, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
+        Mono<TechnologyDTO> result = service.createTechnology(technologyDTO);
 
-        StepVerifier.create(service.createTechnology(technologyDTO))
+        StepVerifier.create(result)
                 .expectNextMatches(dto ->
                         dto.getId().equals(1L) &&
                                 dto.getName().equals(TECHNOLOGY_NAME) &&
@@ -85,30 +92,43 @@ public class TechnologyServiceTest {
         Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
         Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
 
-        when(repository.findAllBy(any(PageRequest.class)))
-                .thenReturn(Flux.just(tech1, tech2));
+        TechnologyDTO techDTO1 = new TechnologyDTO(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO techDTO2 = new TechnologyDTO(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+
+        when(repository.findAllBy(any(PageRequest.class))).thenReturn(Flux.just(tech1, tech2));
+        when(technologyMapper.mapToDTO(tech1)).thenReturn(techDTO1);
+        when(technologyMapper.mapToDTO(tech2)).thenReturn(techDTO2);
 
         Flux<TechnologyDTO> result = service.getAllTechnologies("asc", 0, 2);
 
         StepVerifier.create(result)
-                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_1))
-                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_2))
+                .expectNextMatches(dto -> dto.getId().equals(TECHNOLOGY_ID) &&
+                        dto.getName().equals(TECHNOLOGY_NAME_1) &&
+                        dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
+                .expectNextMatches(dto -> dto.getId().equals(2L) &&
+                        dto.getName().equals(TECHNOLOGY_NAME_2) &&
+                        dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
                 .verifyComplete();
     }
 
     @Test
     void testGetAllTechnologiesDescending() {
-        Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
-        Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+        Technology tech1 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+        Technology tech2 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
+
+        TechnologyDTO techDTO1 = new TechnologyDTO(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO techDTO2 = new TechnologyDTO(TECHNOLOGY_ID, TECHNOLOGY_NAME, TECHNOLOGY_DESCRIPTION);
 
         when(repository.findAllBy(any(PageRequest.class)))
                 .thenReturn(Flux.just(tech1, tech2));
+        when(technologyMapper.mapToDTO(tech1)).thenReturn(techDTO1);
+        when(technologyMapper.mapToDTO(tech2)).thenReturn(techDTO2);
 
         Flux<TechnologyDTO> result = service.getAllTechnologies("desc", 0, 2);
 
         StepVerifier.create(result)
-                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_1))
-                .expectNextMatches(dto -> dto.getName().equals(TECHNOLOGY_NAME_2))
+                .expectNextMatches(dto -> dto.getId().equals(2L) && dto.getName().equals(TECHNOLOGY_NAME_2))
+                .expectNextMatches(dto -> dto.getId().equals(TECHNOLOGY_ID) && dto.getName().equals(TECHNOLOGY_NAME))
                 .verifyComplete();
     }
 
@@ -164,13 +184,24 @@ public class TechnologyServiceTest {
         Technology tech1 = new Technology(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
         Technology tech2 = new Technology(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
 
+        TechnologyDTO techDTO1 = new TechnologyDTO(TECHNOLOGY_ID, TECHNOLOGY_NAME_1, TECHNOLOGY_DESCRIPTION);
+        TechnologyDTO techDTO2 = new TechnologyDTO(2L, TECHNOLOGY_NAME_2, TECHNOLOGY_DESCRIPTION);
+
         when(capabilityTechnologyRepository.findByCapabilityId(capabilityId)).thenReturn(Flux.just(ct1, ct2));
-        when(repository.findById(1L)).thenReturn(Mono.just(tech1));
+        when(repository.findById(TECHNOLOGY_ID)).thenReturn(Mono.just(tech1));
         when(repository.findById(2L)).thenReturn(Mono.just(tech2));
 
+        when(technologyMapper.mapToDTO(tech1)).thenReturn(techDTO1);
+        when(technologyMapper.mapToDTO(tech2)).thenReturn(techDTO2);
+
         StepVerifier.create(service.getTechnologiesByCapabilityId(capabilityId))
-                .expectNextMatches(dto -> dto.getId().equals(1L) && dto.getName().equals(TECHNOLOGY_NAME_1) && dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
-                .expectNextMatches(dto -> dto.getId().equals(2L) && dto.getName().equals(TECHNOLOGY_NAME_2) && dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
+                .expectNextMatches(dto -> dto.getId().equals(TECHNOLOGY_ID) &&
+                        dto.getName().equals(TECHNOLOGY_NAME_1) &&
+                        dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
+                .expectNextMatches(dto -> dto.getId().equals(2L) &&
+                        dto.getName().equals(TECHNOLOGY_NAME_2) &&
+                        dto.getDescription().equals(TECHNOLOGY_DESCRIPTION))
                 .verifyComplete();
     }
+
 }

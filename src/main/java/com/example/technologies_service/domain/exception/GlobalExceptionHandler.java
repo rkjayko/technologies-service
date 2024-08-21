@@ -1,6 +1,6 @@
-package com.example.technologies_service.infrastructure.config;
+package com.example.technologies_service.domain.exception;
 
-import com.example.technologies_service.domain.dto.ErrorResponseDTO;
+import com.example.technologies_service.infrastructure.adapter.out.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

@@ -1,4 +1,4 @@
-package com.example.technologies_service.infrastructure.adapter;
+package com.example.technologies_service.domain.repository;
 
 import com.example.technologies_service.domain.entity.CapabilityTechnology;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;

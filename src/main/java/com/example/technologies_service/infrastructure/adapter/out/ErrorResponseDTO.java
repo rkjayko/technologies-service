@@ -1,4 +1,4 @@
-package com.example.technologies_service.domain.dto;
+package com.example.technologies_service.infrastructure.adapter.out;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
