@@ -1,4 +1,4 @@
-package com.example.technologies_service.domain.repository;
+package com.example.technologies_service.domain.port;
 
 import com.example.technologies_service.domain.entity.Technology;
 import org.springframework.data.domain.Pageable;

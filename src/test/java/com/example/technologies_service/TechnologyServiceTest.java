@@ -1,11 +1,11 @@
 package com.example.technologies_service;
 
 import com.example.technologies_service.application.mapper.TechnologyMapper;
-import com.example.technologies_service.infrastructure.adapter.in.TechnologyDTO;
+import com.example.technologies_service.domain.entity.dto.TechnologyDTO;
 import com.example.technologies_service.domain.entity.CapabilityTechnology;
 import com.example.technologies_service.domain.entity.Technology;
-import com.example.technologies_service.domain.repository.CapabilityTechnologyRepository;
-import com.example.technologies_service.domain.repository.TechnologyRepository;
+import com.example.technologies_service.domain.port.CapabilityTechnologyRepository;
+import com.example.technologies_service.domain.port.TechnologyRepository;
 import com.example.technologies_service.application.useCase.TechnologyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.example.technologies_service.infrastructure.controller;
 
-import com.example.technologies_service.infrastructure.adapter.in.TechnologyDTO;
+import com.example.technologies_service.domain.entity.dto.TechnologyDTO;
 import com.example.technologies_service.application.useCase.ITechnologyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,4 +1,4 @@
-package com.example.technologies_service.infrastructure.adapter.in;
+package com.example.technologies_service.domain.entity.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -6,8 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import static com.example.technologies_service.infrastructure.utils.ValidationMessages.NAME_NOT_BLANK;
-import static com.example.technologies_service.infrastructure.utils.ValidationMessages.NAME_SIZE;
+import static com.example.technologies_service.infrastructure.utils.ValidationMessages.*;
 
 @Data
 @NoArgsConstructor
@@ -19,7 +18,7 @@ public class TechnologyDTO {
     @Size(max = 50, message = NAME_SIZE)
     private String name;
 
-    @NotBlank(message = NAME_NOT_BLANK)
-    @Size(max = 90, message = NAME_SIZE)
+    @NotBlank(message = DESCRIPTION_NOT_BLANK)
+    @Size(max = 90, message = DESCRIPTION_SIZE)
     private String description;
 }

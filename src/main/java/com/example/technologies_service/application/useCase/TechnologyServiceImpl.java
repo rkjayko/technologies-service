@@ -4,9 +4,9 @@ import com.example.technologies_service.application.mapper.TechnologyMapper;
 import com.example.technologies_service.domain.entity.CapabilityTechnology;
 import com.example.technologies_service.domain.entity.Technology;
 import com.example.technologies_service.domain.exception.CustomException;
-import com.example.technologies_service.domain.repository.CapabilityTechnologyRepository;
-import com.example.technologies_service.domain.repository.TechnologyRepository;
-import com.example.technologies_service.infrastructure.adapter.in.TechnologyDTO;
+import com.example.technologies_service.domain.port.CapabilityTechnologyRepository;
+import com.example.technologies_service.domain.port.TechnologyRepository;
+import com.example.technologies_service.domain.entity.dto.TechnologyDTO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,7 +24,8 @@ public class TechnologyServiceImpl implements ITechnologyService {
     private final CapabilityTechnologyRepository capabilityTechnologyRepository;
     private final TechnologyMapper technologyMapper;
 
-    public TechnologyServiceImpl(TechnologyRepository repository, CapabilityTechnologyRepository capabilityTechnologyRepository, TechnologyMapper technologyMapper) {
+    public TechnologyServiceImpl(TechnologyRepository repository, CapabilityTechnologyRepository capabilityTechnologyRepository,
+                                 TechnologyMapper technologyMapper) {
         this.repository = repository;
         this.capabilityTechnologyRepository = capabilityTechnologyRepository;
         this.technologyMapper = technologyMapper;
@@ -43,12 +44,10 @@ public class TechnologyServiceImpl implements ITechnologyService {
 
     @Override
     public Flux<TechnologyDTO> getAllTechnologies(String sortDirection, int page, int size) {
-        Sort sort = Sort.by("name");
-        if ("desc".equalsIgnoreCase(sortDirection)) {
-            sort = sort.descending();
-        }
+        Sort sort = "desc".equalsIgnoreCase(sortDirection) ? Sort.by("name").descending() : Sort.by("name").ascending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
+
         return repository.findAllBy(pageable)
                 .map(technologyMapper::mapToDTO);
     }
@@ -82,6 +81,4 @@ public class TechnologyServiceImpl implements ITechnologyService {
                 .flatMap(technologyId -> repository.findById(technologyId)
                         .map(technologyMapper::mapToDTO));
     }
-
-
 }
